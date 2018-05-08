@@ -433,7 +433,7 @@ public class App
     private Stylist readFullPeriodRow(HSSFRow row, Stylist stylist) {
         stylist.fullPeriodTotalHours = row.getCell(10).getNumericCellValue();
         stylist.fullPeriodOtherHours = row.getCell(12).getNumericCellValue();
-        stylist.backBar = row.getCell(21).getNumericCellValue() / 100.0;
+        stylist.backBar = Math.round(row.getCell(21).getNumericCellValue()) / 100.0;
         stylist.serviceClients = (int)row.getCell(3).getNumericCellValue();
         stylist.totalRetail = row.getCell(8).getNumericCellValue();
         stylist.totalService = row.getCell(7).getNumericCellValue();
