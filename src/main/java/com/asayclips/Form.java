@@ -33,15 +33,18 @@ public class Form extends Application {
 
         // second row
         final Label storePickerLabel = new Label("Store #");
-        gridPane.add(storePickerLabel, 0, 3);
+        gridPane.add(storePickerLabel, 0, 2);
 
         final TextField storeText = new TextField();
-        gridPane.add(storeText, 0, 4);
+        gridPane.add(storeText, 0, 3);
 
         // message area
+        final Label messageLabel = new Label("Output");
+        gridPane.add(messageLabel, 0, 4);
+
         final TextArea messageArea = new TextArea();
         messageArea.backgroundProperty().setValue(Background.EMPTY);
-        gridPane.add(messageArea, 0, 6);
+        gridPane.add(messageArea, 0, 5);
 
         //bottom
         Button goButton = new Button();
@@ -53,7 +56,7 @@ public class Form extends Application {
                 app.generatePayroll(datePicker.getEditor().getText(), storeText.getText());
             }
         });
-        gridPane.add(goButton, 0, 15);
+        gridPane.add(goButton, 0, 6);
 
 
         Button exitButton = new Button();
@@ -64,9 +67,9 @@ public class Form extends Application {
                 System.exit(0);
             }
         });
-        gridPane.add(exitButton, 0, 16);
+        gridPane.add(exitButton, 0, 7);
 
-        primaryStage.setScene(new Scene(gridPane, 600, 500));
+        primaryStage.setScene(new Scene(gridPane, 540, 410));
         primaryStage.show();
     }
 }
