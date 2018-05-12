@@ -20,7 +20,7 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.asayclips.App</mainClass>
+                  <mainClass>com.asayclips.Form</mainClass>
                 </transformer>
               </transformers>
             </configuration>
