@@ -6,7 +6,6 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import javafx.scene.control.TextArea;
-import org.apache.poi.hssf.usermodel.HSSFCell;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -245,7 +244,7 @@ public class App
     private void processManager(HSSFSheet sheet, Map<String,Stylist> stylists)
     {
         HSSFRow row = sheet.getRow(8);
-        String name = getNameFromRow(row, 0);
+        String name = ExcelUtils.getNameFromRow(row, 0);
         Stylist manager = stylists.get(name.toLowerCase());
         if (manager == null)
         {
@@ -272,7 +271,7 @@ public class App
         for (int i=12; i<88; i+=3)
         {
             HSSFRow row = sheet.getRow(i);
-            String name = getNameFromRow(row, 0);
+            String name = ExcelUtils.getNameFromRow(row, 0);
             Stylist stylist = stylists.get(name.toLowerCase());
             if (stylist != null)
             {
@@ -313,7 +312,7 @@ public class App
         for (int i=91; i<104; i+=3)
         {
             HSSFRow row = sheet.getRow(i);
-            String name = getNameFromRow(row, 0);
+            String name = ExcelUtils.getNameFromRow(row, 0);
             Stylist receptionist = stylists.get(name.toLowerCase());
             if (receptionist != null)
             {
@@ -327,15 +326,6 @@ public class App
             else if (name != null && !name.equals("") && !name.contains("Coordinator"))
                 displayMessage(String.format("No match for coordinator (%s) found in stylist analysis report.", name));
         }
-    }
-
-    private String getNameFromRow(HSSFRow row, int cellNumber)
-    {
-        HSSFCell cell = row.getCell(cellNumber);
-        if (cell == null)
-            return "";
-
-        return cleanupName(cell.getStringCellValue());
     }
 
     private void processHouseSales(HSSFSheet sheet, Stylist house)
@@ -354,22 +344,24 @@ public class App
             Map<String, Stylist> stylists = new HashMap<String, Stylist>();
             HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
             HSSFSheet sheet = workbook.getSheet("Worksheet");
+            StylistAnalysisCells cells = new StylistAnalysisCells();
+            cells.init(sheet);
 
             int rowIndx = 4;
             HSSFRow row = sheet.getRow(rowIndx);
             while (true)
             {
-                String firstname = row.getCell(1).getStringCellValue();
+                String firstname = row.getCell(cells.firstName).getStringCellValue();
                 if ("Total".equals(firstname))
                     break;
 
                 Stylist stylist = new Stylist();
-                String name = firstname.trim() + " " + row.getCell(2).getStringCellValue().trim();
+                String name = firstname.trim() + " " + row.getCell(cells.lastName).getStringCellValue().trim();
 
                 stylist.name = name;
-                stylist.firstWeekTotalHours = row.getCell(10).getNumericCellValue();
-                stylist.firstWeekOtherHours = row.getCell(12).getNumericCellValue();
-                stylists.put(name.toLowerCase(), readFullPeriodRow(row, stylist));
+                stylist.firstWeekTotalHours = row.getCell(cells.totalHours).getNumericCellValue();
+                stylist.firstWeekOtherHours = row.getCell(cells.otherHours).getNumericCellValue();
+                stylists.put(name.toLowerCase(), readFullPeriodRow(cells, row, stylist));
                 rowIndx++;
                 row = sheet.getRow(rowIndx);
             }
@@ -388,14 +380,16 @@ public class App
         {
             HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
             HSSFSheet sheet = workbook.getSheet("Worksheet");
+            StylistAnalysisCells cells = new StylistAnalysisCells();
+            cells.init(sheet);
 
             int rowIndx = 3;
             HSSFRow row = sheet.getRow(rowIndx);
             while (true)
             {
-                String firstname = row.getCell(1).getStringCellValue();
+                String firstname = row.getCell(cells.firstName).getStringCellValue();
                 String name = String.format("%s %s",
-                        firstname.trim(), row.getCell(2).getStringCellValue().trim());
+                        firstname.trim(), row.getCell(cells.lastName).getStringCellValue().trim());
                 Stylist stylist = stylists.get(name.toLowerCase());
                 if (stylist == null)
                 {
@@ -403,7 +397,7 @@ public class App
                     stylist.name = name;
                     stylists.put(name.toLowerCase(), stylist);
                 }
-                readFullPeriodRow(row, stylist);
+                readFullPeriodRow(cells, row, stylist);
                 getStylistBonusLevel(stylist);
                 if ("Total".equals(firstname))
                     break;
@@ -431,7 +425,7 @@ public class App
             HSSFRow row = sheet.getRow(rowIndx);
             while (row != null)
             {
-                String name = getNameFromRow(row, 0);
+                String name = ExcelUtils.getNameFromRow(row, 0);
                 Stylist stylist = stylists.get(name.toLowerCase());
                 if (stylist == null)
                 {
@@ -451,20 +445,15 @@ public class App
         }
     }
 
-    private static String cleanupName(String name)
-    {
-        return name.replaceAll("  ", " ").trim();
-    }
-
-    private Stylist readFullPeriodRow(HSSFRow row, Stylist stylist) {
-        stylist.fullPeriodTotalHours = row.getCell(10).getNumericCellValue();
-        stylist.fullPeriodOtherHours = row.getCell(12).getNumericCellValue();
-        stylist.backBar = Math.round(row.getCell(21).getNumericCellValue()) / 100.0;
-        stylist.serviceClients = (int)row.getCell(3).getNumericCellValue();
-        stylist.totalRetail = row.getCell(8).getNumericCellValue();
-        stylist.totalService = row.getCell(7).getNumericCellValue();
-        stylist.takeHomePerClient = row.getCell(13).getNumericCellValue();
-        stylist.cutsPerHour = row.getCell(16).getNumericCellValue();
+    private Stylist readFullPeriodRow(StylistAnalysisCells cells, HSSFRow row, Stylist stylist) {
+        stylist.fullPeriodTotalHours = row.getCell(cells.totalHours).getNumericCellValue();
+        stylist.fullPeriodOtherHours = row.getCell(cells.otherHours).getNumericCellValue();
+        stylist.backBar = Math.round(row.getCell(cells.backBar).getNumericCellValue()) / 100.0;
+        stylist.serviceClients = (int)row.getCell(cells.serviceClients).getNumericCellValue();
+        stylist.totalRetail = row.getCell(cells.retailSales).getNumericCellValue();
+        stylist.totalService = row.getCell(cells.serviceSales).getNumericCellValue();
+        stylist.takeHomePerClient = row.getCell(cells.takeHomePerClient).getNumericCellValue();
+        stylist.cutsPerHour = row.getCell(cells.cutsPerHour).getNumericCellValue();
         return stylist;
     }
 
@@ -480,7 +469,7 @@ public class App
      */
     private static void getStylistBonusLevel(Stylist stylist)
     {
-//        double takeHomePerClient = stylist.totalRetail / (double)stylist.serviceClients;
+//        double takeHomePerClient = stylist.retailSales / (double)stylist.serviceClients;
 //        double cutsPerHour = (double)stylist.serviceClients / stylist.fullPeriodTotalHours;
 
         if (stylist.backBar >= 0.65 && stylist.takeHomePerClient >= 3.0 && stylist.cutsPerHour >= 2.2)
