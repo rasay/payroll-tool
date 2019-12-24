@@ -163,10 +163,12 @@ public class App
         }
     }
 
+    private static final long MILISECONDS_PER_HOUR = 1000 * 60 * 60;
+    private static final long MILISECONDS_PER_DAY = 24 * MILISECONDS_PER_HOUR;
     private static SimpleDateFormat _dateFormat = new SimpleDateFormat("MM/dd/yyyy");
-    private static String findOffsetDate(String baseDate, int days) throws ParseException
+    public static String findOffsetDate(String baseDate, int days) throws ParseException
     {
-        Date d = new Date(_dateFormat.parse(baseDate).getTime() + days*24*60*60*1000);
+        Date d = new Date(_dateFormat.parse(baseDate).getTime() + days*MILISECONDS_PER_DAY + MILISECONDS_PER_HOUR);
         return _dateFormat.format(d);
     }
 
