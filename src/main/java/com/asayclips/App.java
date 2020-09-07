@@ -77,6 +77,9 @@ public class App
             String outputFilename = String.format("%s/Documents/Payroll/%s_%s.xls",
                     _userHome, storeNumber, endDate.replaceAll("/", "-"));
 
+            String output2Filename = String.format("%s/Documents/Payroll/%s_%s version2_0.xls",
+                    _userHome, storeNumber, endDate.replaceAll("/", "-"));
+
             File firstWeekStylistAnalysis = findFirstWeekStylistAnalysis(beginDate, storeNumber);
             File fullPeriodStylistAnalysis = findStylistAnalysis(beginDate, endDate, storeNumber);
             File tipsFile = findTips(beginDate, endDate, storeNumber);
@@ -87,7 +90,9 @@ public class App
             {
                 Map<String, Stylist> stylists = readData(firstWeekStylistAnalysis, fullPeriodStylistAnalysis, tipsFile);
                 String templateFile = String.format("%s/Documents/Payroll Templates/%s.xls", _userHome, storeNumber);
-                buildPayrollFile(templateFile, outputFilename, stylists, endDate);
+                populateTemplate(templateFile, outputFilename, stylists, endDate);
+//                String template2File = String.format("%s/Documents/Payroll Templates/%s version2_0.xls", _userHome, storeNumber);
+//                populateTemplate(template2File, output2Filename, stylists, endDate);
                 displayMessage("### Success!!!");
             }
         }
@@ -215,7 +220,29 @@ public class App
         }
     }
 
-    private void buildPayrollFile(String templateFilename, String payrollFilename, Map<String,Stylist> stylists, String endDate) throws Exception
+    private void populateTemplate(String templateFilename, String payrollFilename, Map<String,Stylist> stylists, String endDate) throws Exception
+    {
+        FileInputStream inputStream = new FileInputStream(new File(templateFilename));
+        HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
+
+        setPayrollDate(workbook.getSheet("Information"), endDate);
+
+        HSSFSheet sheet = workbook.getSheet("Template");
+        processManager(sheet, stylists);
+        processStylists(sheet, stylists);
+        processCoordinators(sheet, stylists);
+        processHouseSales(sheet, stylists.get("business house"));
+        inputStream.close();
+
+        workbook.setForceFormulaRecalculation(true);
+        FileOutputStream outputStream =new FileOutputStream(new File(payrollFilename));
+        workbook.write(outputStream);
+        outputStream.close();
+
+        verifyEmployees(stylists);
+    }
+
+    private void populateTemplate2(String templateFilename, String payrollFilename, Map<String,Stylist> stylists, String endDate) throws Exception
     {
         FileInputStream inputStream = new FileInputStream(new File(templateFilename));
         HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
