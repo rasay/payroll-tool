@@ -6,6 +6,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import javafx.scene.control.TextArea;
+import org.apache.commons.lang.StringUtils;
 import org.apache.poi.hssf.usermodel.HSSFRow;
 import org.apache.poi.hssf.usermodel.HSSFSheet;
 import org.apache.poi.hssf.usermodel.HSSFWorkbook;
@@ -315,7 +316,7 @@ public class App
             if (!stylist.foundMatch && stylist.isPerson())
             {
                 HSSFRow row = findEmptyStylistRow(sheet);
-                row.getCell(0).setCellValue(stylist.name);
+                row.createCell(0).setCellValue(stylist.name);
                 processStylist(sheet, row, stylist);
             }
         }
@@ -327,6 +328,7 @@ public class App
         {
             HSSFRow row = sheet.getRow(i);
             String name = ExcelUtils.getNameFromRow(row, 0);
+            displayMessage(String.format("Is name '%s'", name));
             if (!isEmployeeName(name))
                 return row;
         }
@@ -335,7 +337,7 @@ public class App
 
     private boolean isEmployeeName(String name)
     {
-        return (name != null && !name.equals("") && !name.contains("Stylist"));
+        return (!StringUtils.isBlank(name) && !name.contains("Stylist"));
     }
 
     private void verifyEmployees(Map<String, Stylist> employees)
