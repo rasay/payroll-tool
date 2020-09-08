@@ -89,10 +89,10 @@ public class App
             else
             {
                 Map<String, Stylist> stylists = readData(firstWeekStylistAnalysis, fullPeriodStylistAnalysis, tipsFile);
-                String templateFile = String.format("%s/Documents/Payroll Templates/%s.xls", _userHome, storeNumber);
-                populateTemplate(templateFile, outputFilename, stylists, endDate);
-//                String template2File = String.format("%s/Documents/Payroll Templates/%s version2_0.xls", _userHome, storeNumber);
-//                populateTemplate(template2File, output2Filename, stylists, endDate);
+//                String templateFile = String.format("%s/Documents/Payroll Templates/%s.xls", _userHome, storeNumber);
+//                populateTemplate(templateFile, outputFilename, stylists, endDate);
+                String template2File = String.format("%s/Documents/Payroll Templates/%s version2_0.xls", _userHome, storeNumber);
+                populateTemplate(template2File, output2Filename, stylists, endDate);
                 displayMessage("### Success!!!");
             }
         }
