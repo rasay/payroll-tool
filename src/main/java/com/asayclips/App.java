@@ -52,8 +52,12 @@ public class App
         double takeHomePerClient;
         double cutsPerHour;
         double tips;
-        String bonusLevel = null;
         boolean foundMatch = false;
+
+        public boolean isPerson()
+        {
+            return (!"Business House".equals(name) && !"Total Salon".equals(name));
+        }
 
         public String toString()
         {
@@ -74,10 +78,8 @@ public class App
             storeNumber = storeNumber.trim().toUpperCase();
 
             String beginDate = findOffsetDate(endDate, -13);
-            String outputFilename = String.format("%s/Documents/Payroll/%s_%s.xls",
-                    _userHome, storeNumber, endDate.replaceAll("/", "-"));
 
-            String output2Filename = String.format("%s/Documents/Payroll/%s_%s version2_0.xls",
+            String outputFilename = String.format("%s/Documents/Payroll/%s_%s.xls",
                     _userHome, storeNumber, endDate.replaceAll("/", "-"));
 
             File firstWeekStylistAnalysis = findFirstWeekStylistAnalysis(beginDate, storeNumber);
@@ -89,10 +91,8 @@ public class App
             else
             {
                 Map<String, Stylist> stylists = readData(firstWeekStylistAnalysis, fullPeriodStylistAnalysis, tipsFile);
-//                String templateFile = String.format("%s/Documents/Payroll Templates/%s.xls", _userHome, storeNumber);
-//                populateTemplate(templateFile, outputFilename, stylists, endDate);
-                String template2File = String.format("%s/Documents/Payroll Templates/%s version2_0.xls", _userHome, storeNumber);
-                populateTemplate(template2File, output2Filename, stylists, endDate);
+                String template2File = String.format("%s/Documents/Payroll Templates/%s.xls", _userHome, storeNumber);
+                populateTemplate(template2File, outputFilename, stylists, endDate);
                 displayMessage("### Success!!!");
             }
         }
@@ -231,28 +231,7 @@ public class App
         processManager(sheet, stylists);
         processStylists(sheet, stylists);
         processCoordinators(sheet, stylists);
-        processHouseSales(sheet, stylists.get("business house"));
-        inputStream.close();
-
-        workbook.setForceFormulaRecalculation(true);
-        FileOutputStream outputStream =new FileOutputStream(new File(payrollFilename));
-        workbook.write(outputStream);
-        outputStream.close();
-
-        verifyEmployees(stylists);
-    }
-
-    private void populateTemplate2(String templateFilename, String payrollFilename, Map<String,Stylist> stylists, String endDate) throws Exception
-    {
-        FileInputStream inputStream = new FileInputStream(new File(templateFilename));
-        HSSFWorkbook workbook = new HSSFWorkbook(inputStream);
-
-        setPayrollDate(workbook.getSheet("Information"), endDate);
-
-        HSSFSheet sheet = workbook.getSheet("Template");
-        processManager(sheet, stylists);
-        processStylists(sheet, stylists);
-        processCoordinators(sheet, stylists);
+        processUnfoundStylists(sheet, stylists);
         processHouseSales(sheet, stylists.get("business house"));
         inputStream.close();
 
@@ -304,34 +283,66 @@ public class App
             Stylist stylist = stylists.get(name.toLowerCase());
             if (stylist != null)
             {
-                row.getCell(1).setCellValue(stylist.backBar);
-                row.getCell(4).setCellValue(stylist.firstWeekOtherHours);
-                row.getCell(6).setCellValue(stylist.firstWeekTotalHours);
-                row.getCell(9).setCellValue(stylist.serviceClients);
-
-                row = sheet.getRow(i + 1);
-                row.getCell(4).setCellValue(stylist.fullPeriodOtherHours - stylist.firstWeekOtherHours);
-                row.getCell(6).setCellValue(stylist.fullPeriodTotalHours - stylist.firstWeekTotalHours);
-
-                row = sheet.getRow(i + 2);
-                row.getCell(2).setCellValue(stylist.tips);
-                row.getCell(10).setCellValue(stylist.totalService);
-                row.getCell(12).setCellValue(stylist.totalRetail);
-                if (stylist.bonusLevel != null)
-                    row.getCell(1).setCellValue(stylist.bonusLevel);
-
+                processStylist(sheet, row, stylist);
                 stylist.foundMatch = true;
             }
-            else if (name != null && !name.equals("") && !name.contains("Stylist"))
+            else if (isEmployeeName(name))
                 displayMessage(String.format("No match for stylist (%s) found in stylist analysis report.", name));
         }
+    }
+
+    private void processStylist(HSSFSheet sheet, HSSFRow row, Stylist stylist)
+    {
+        row.getCell(1).setCellValue(stylist.backBar);
+        row.getCell(4).setCellValue(stylist.firstWeekOtherHours);
+        row.getCell(6).setCellValue(stylist.firstWeekTotalHours);
+        row.getCell(9).setCellValue(stylist.serviceClients);
+
+        row = sheet.getRow(row.getRowNum() + 1);
+        row.getCell(4).setCellValue(stylist.fullPeriodOtherHours - stylist.firstWeekOtherHours);
+        row.getCell(6).setCellValue(stylist.fullPeriodTotalHours - stylist.firstWeekTotalHours);
+
+        row = sheet.getRow(row.getRowNum() + 1);
+        row.getCell(2).setCellValue(stylist.tips);
+        row.getCell(10).setCellValue(stylist.totalService);
+        row.getCell(12).setCellValue(stylist.totalRetail);
+    }
+
+    private void processUnfoundStylists(HSSFSheet sheet, Map<String,Stylist> stylists)
+    {
+        for (Stylist stylist : stylists.values())
+        {
+            if (!stylist.foundMatch && stylist.isPerson())
+            {
+                HSSFRow row = findEmptyStylistRow(sheet);
+                row.getCell(0).setCellValue(stylist.name);
+                processStylist(sheet, row, stylist);
+            }
+        }
+    }
+
+    private HSSFRow findEmptyStylistRow(HSSFSheet sheet)
+    {
+        for (int i=12; i<88; i+=3)
+        {
+            HSSFRow row = sheet.getRow(i);
+            String name = ExcelUtils.getNameFromRow(row, 0);
+            if (!isEmployeeName(name))
+                return row;
+        }
+        return null; // shouldn't ever happen
+    }
+
+    private boolean isEmployeeName(String name)
+    {
+        return (name != null && !name.equals("") && !name.contains("Stylist"));
     }
 
     private void verifyEmployees(Map<String, Stylist> employees)
     {
         for (Stylist employee : employees.values())
         {
-            if (!employee.foundMatch && !"Business House".equals(employee.name) && !"Total Salon".equals(employee.name))
+            if (!employee.foundMatch && employee.isPerson())
                 displayMessage(String.format("No match for employee (%s) found in payroll template.", employee.name));
         }
     }
@@ -427,7 +438,6 @@ public class App
                     stylists.put(name.toLowerCase(), stylist);
                 }
                 readFullPeriodRow(cells, row, stylist);
-                getStylistBonusLevel(stylist);
                 if ("Total".equals(firstname))
                     break;
 
@@ -484,33 +494,5 @@ public class App
         stylist.takeHomePerClient = row.getCell(cells.takeHomePerClient).getNumericCellValue();
         stylist.cutsPerHour = row.getCell(cells.cutsPerHour).getNumericCellValue();
         return stylist;
-    }
-
-    /**
-     *          PaidBB  Take Home  CPTH
-     *  Star      35%   $1.50     1.8
-     *  All Star  40%   $1.75     2.0
-     *  MVP       45%   $2.00     2.2
-     *  Platinum  65%   $3.00     2.2
-     *
-     * @param stylist
-     * @return
-     */
-    private static void getStylistBonusLevel(Stylist stylist)
-    {
-//        double takeHomePerClient = stylist.retailSales / (double)stylist.serviceClients;
-//        double cutsPerHour = (double)stylist.serviceClients / stylist.fullPeriodTotalHours;
-
-        if (stylist.backBar >= 0.65 && stylist.takeHomePerClient >= 3.0 && stylist.cutsPerHour >= 2.2)
-            stylist.bonusLevel = "Platinum";
-
-        else if (stylist.backBar >= 0.45 && stylist.takeHomePerClient >= 2.0 && stylist.cutsPerHour >= 2.2)
-            stylist.bonusLevel = "MVP";
-
-        else if (stylist.backBar >= 0.4 && stylist.takeHomePerClient >= 1.75 && stylist.cutsPerHour >= 2.0)
-            stylist.bonusLevel = "All Star";
-
-        else if (stylist.backBar >= 0.35 && stylist.takeHomePerClient >= 1.5 && stylist.cutsPerHour >= 1.8)
-            stylist.bonusLevel =  "Star";
     }
 }
