@@ -100,7 +100,10 @@ public class App
         catch (Exception e)
         {
             displayMessage("ERROR : " + e.toString());
-            e.printStackTrace();
+            StringWriter sw = new StringWriter();
+            PrintWriter pw = new PrintWriter(sw);
+            e.printStackTrace(pw);
+            displayMessage(sw.toString());
         }
     }
 
@@ -328,7 +331,6 @@ public class App
         {
             HSSFRow row = sheet.getRow(i);
             String name = ExcelUtils.getNameFromRow(row, 0);
-            displayMessage(String.format("Is name '%s'", name));
             if (!isEmployeeName(name))
                 return row;
         }
@@ -489,7 +491,15 @@ public class App
     private Stylist readFullPeriodRow(StylistAnalysisCells cells, HSSFRow row, Stylist stylist) {
         stylist.fullPeriodTotalHours = row.getCell(cells.totalHours).getNumericCellValue();
         stylist.fullPeriodOtherHours = row.getCell(cells.otherHours).getNumericCellValue();
-        stylist.backBar = Math.round(row.getCell(cells.backBar).getNumericCellValue()) / 100.0;
+        try
+        {
+            stylist.backBar = Math.round(row.getCell(cells.backBar).getNumericCellValue()) / 100.0;
+        }
+        catch (IllegalStateException e)
+        {
+            // kludge if value is infinity, default to 100%
+            stylist.backBar = 1.0;
+        }
         stylist.serviceClients = (int)row.getCell(cells.serviceClients).getNumericCellValue();
         stylist.totalRetail = row.getCell(cells.retailSales).getNumericCellValue();
         stylist.totalService = row.getCell(cells.serviceSales).getNumericCellValue();
